@@ -34,13 +34,18 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.patch("/:id/edit", async (req, res) => {
+router.patch("/:id/edit", auth.authenticate(), async (req, res) => {
+  const {
+    params: { id },
+    body: { title, description }
+  } = req;
+
   try {
-    const {
-      params: { id },
-      body: { title, description }
-    } = req;
-    console.log(title, description);
+    const video = await Video.findById(id);
+
+    if (String(video.creator) !== String(req.user.id)) {
+      throw Error("Unauthorized");
+    }
     await Video.updateOne({ _id: id }, { $set: { title, description } });
     res.json({ result: "Video Updated" });
   } catch (error) {
@@ -51,38 +56,53 @@ router.patch("/:id/edit", async (req, res) => {
   }
 });
 
-router.post(
-  "/upload",
-  auth.authenticate(),
-  uploadMulter,
-  async (req, res, next) => {
-    const {
-      body: { title, description, userId },
-      file: { location },
-      user: { id }
-    } = req;
+router.post("/upload", auth.authenticate(), uploadMulter, async (req, res) => {
+  const {
+    body: { title, description, userId },
+    file: { location },
+    user: { id }
+  } = req;
 
-    try {
-      const newVideo = await Video({
-        fileUrl: location,
-        title,
-        description,
-        creator: id
-      });
-      newVideo.save();
+  try {
+    const newVideo = await Video({
+      fileUrl: location,
+      title,
+      description,
+      creator: id
+    });
+    newVideo.save();
 
-      const user = await User.findById(id);
-      user.videos.push(newVideo);
-      user.save();
+    const user = await User.findById(id);
+    user.videos.push(newVideo);
+    user.save();
 
-      res.json({ result: "File Uploaded" });
-    } catch (error) {
-      res.status(500).json({
-        result: false,
-        error
-      });
-    }
+    res.json({ result: "File Uploaded" });
+  } catch (error) {
+    res.status(500).json({
+      result: false,
+      error
+    });
   }
-);
+});
+
+router.delete("/:id/delete", auth.authenticate(), async (req, res) => {
+  const {
+    params: { id }
+  } = req;
+  try {
+    const video = await Video.findById(id);
+
+    if (String(video.creator) !== String(req.user.id)) {
+      throw Error("Unauthorized");
+    }
+    await Video.findByIdAndRemove(id);
+    res.json({ result: "Video Deleted" });
+  } catch (error) {
+    res.status(500).json({
+      result: false,
+      error
+    });
+  }
+});
 
 module.exports = router;
