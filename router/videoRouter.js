@@ -3,10 +3,11 @@ const uploadMulter = require("../common/multer");
 const auth = require("../common/auth")();
 
 const { Video } = require("../models/Video");
+const { User } = require("../models/User");
 
 const router = express.Router();
 
-router.get("/all", async (req, res, next) => {
+router.get("/all", async (req, res) => {
   try {
     const videos = await Video.find();
     res.json({ result: { videos } });
@@ -18,13 +19,30 @@ router.get("/all", async (req, res, next) => {
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", async (req, res) => {
   try {
     const {
       params: { id }
     } = req;
-    const video = await Video.findById(id);
+    const video = await Video.findById(id).populate("creator");
     res.json({ result: { video } });
+  } catch (error) {
+    res.status(500).json({
+      result: false,
+      error
+    });
+  }
+});
+
+router.patch("/:id/edit", async (req, res) => {
+  try {
+    const {
+      params: { id },
+      body: { title, description }
+    } = req;
+    console.log(title, description);
+    await Video.updateOne({ _id: id }, { $set: { title, description } });
+    res.json({ result: "Video Updated" });
   } catch (error) {
     res.status(500).json({
       result: false,
@@ -39,8 +57,9 @@ router.post(
   uploadMulter,
   async (req, res, next) => {
     const {
-      body: { title, description },
-      file: { location }
+      body: { title, description, userId },
+      file: { location },
+      user: { id }
     } = req;
 
     try {
@@ -48,9 +67,14 @@ router.post(
         fileUrl: location,
         title,
         description,
-        creator: req.user.id
+        creator: id
       });
       newVideo.save();
+
+      const user = await User.findById(id);
+      user.videos.push(newVideo);
+      user.save();
+
       res.json({ result: "File Uploaded" });
     } catch (error) {
       res.status(500).json({

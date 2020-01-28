@@ -11,8 +11,6 @@ router.get("/page", async (req, res, next) => {
     res.json({ result: true, user });
   } catch (error) {
     res.status(500).json({ result: false, error: error.details[0].message });
-  } finally {
-    next();
   }
 });
 

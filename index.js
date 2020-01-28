@@ -5,9 +5,10 @@ const morgan = require("morgan");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-const userRouter = require("./router/userRouter");
+const authRouter = require("./router/authRouter");
 const myRouter = require("./router/myRouter");
 const videoRouter = require("./router/videoRouter");
+const userRouter = require("./router/userRouter");
 
 const config = require("./common/jwt_config");
 const auth = require("./common/auth")();
@@ -48,8 +49,9 @@ app.use((req, res, next) => {
 app.use(auth.initialize());
 app.use(express.json());
 
-app.use("/api/auth", userRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/my", auth.authenticate(), myRouter);
+app.use("/api/users", userRouter);
 app.use("/api/video", videoRouter);
 
 app.use(() => mongoose.disconnect());
