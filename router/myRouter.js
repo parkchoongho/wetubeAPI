@@ -5,10 +5,23 @@ const { User, validatePassword } = require("../models/User");
 
 const router = express.Router();
 
-router.get("/page", async (req, res, next) => {
+router.get("/page", async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate("videos");
     res.json({ result: true, user });
+  } catch (error) {
+    res.status(500).json({ result: false, error: error.details[0].message });
+  }
+});
+
+router.patch("/edit", async (req, res) => {
+  try {
+    const {
+      user: { id },
+      body: { name, email }
+    } = req;
+    await User.updateOne({ _id: id }, { $set: { name, email } });
+    res.json({ result: "User Updated" });
   } catch (error) {
     res.status(500).json({ result: false, error: error.details[0].message });
   }
