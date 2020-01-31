@@ -1,7 +1,9 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 const { User, validatePassword } = require("../models/User");
+const { jwtSecret } = require("../common/jwt_config");
 
 const router = express.Router();
 
@@ -21,7 +23,20 @@ router.patch("/edit", async (req, res) => {
       body: { name, email }
     } = req;
     await User.updateOne({ _id: id }, { $set: { name, email } });
-    res.json({ result: "User Updated" });
+
+    const token = jwt.sign(
+      {
+        id,
+        name,
+        email
+      },
+      jwtSecret,
+      {
+        expiresIn: "1h"
+      }
+    );
+
+    res.json({ result: { message: "User Updated", token } });
   } catch (error) {
     res.status(500).json({ result: false, error: error.details[0].message });
   }
@@ -34,6 +49,8 @@ router.patch("/changePassword", async (req, res, next) => {
   } = req;
   const passwordObj = { password };
 
+  console.log(curPassword, password);
+
   const { error } = validatePassword(passwordObj);
 
   if (error) {
@@ -45,6 +62,7 @@ router.patch("/changePassword", async (req, res, next) => {
     next();
     return;
   }
+
   try {
     const user = await User.findById(req.user.id);
     const result = await bcrypt.compare(curPassword, user.password);
@@ -52,13 +70,12 @@ router.patch("/changePassword", async (req, res, next) => {
     if (result) {
       const saltRound = 10;
       const hashedNewPassword = await bcrypt.hash(password, saltRound);
-      const updatedUser = await User.updateOne(
+      await User.updateOne(
         { _id: req.user.id },
         { $set: { password: hashedNewPassword } }
       );
       res.json({
         result: true,
-        updatedUser,
         msg: "비밀번호가 업데이트되었습니다."
       });
     } else {
@@ -66,8 +83,6 @@ router.patch("/changePassword", async (req, res, next) => {
     }
   } catch (error) {
     res.status(500).json({ result: false, error });
-  } finally {
-    next();
   }
 });
 
