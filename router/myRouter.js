@@ -43,13 +43,10 @@ router.patch("/edit", async (req, res) => {
 });
 
 router.patch("/changePassword", async (req, res, next) => {
-  console.log(req.user);
   const {
     body: { curPassword, password }
   } = req;
   const passwordObj = { password };
-
-  console.log(curPassword, password);
 
   const { error } = validatePassword(passwordObj);
 

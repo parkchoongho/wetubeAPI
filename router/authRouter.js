@@ -17,7 +17,7 @@ router.post("/join", async (req, res, next) => {
 
   try {
     const { name, email, password } = req.body;
-    console.log(req.body);
+
     let settler = await User.findOne({ email });
     if (settler) {
       res.status(400).send("User Already Registered");
@@ -45,8 +45,6 @@ router.post("/join", async (req, res, next) => {
         expiresIn: "1h"
       }
     );
-
-    console.log(token);
 
     res.json({
       result: token
