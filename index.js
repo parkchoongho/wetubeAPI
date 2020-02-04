@@ -53,6 +53,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/my", auth.authenticate(), myRouter);
 app.use("/api/users", userRouter);
 app.use("/api/video", videoRouter);
+app.use("/api/comment");
 
 app.use(() => mongoose.disconnect());
 
